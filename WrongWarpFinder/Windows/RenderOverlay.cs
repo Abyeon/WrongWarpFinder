@@ -45,20 +45,29 @@ namespace WrongWarpFinder.Windows
             Io = ImGui.GetIO();
             ImGui.SetWindowSize(Io.DisplaySize);
 
-            for (int i = 0; i < Plugin.CubesToRender.Count; i++)
+            for (int i = 0; i < Plugin.Configuration.CubesToRender.Count; i++)
             {
-                Cube cube = Plugin.CubesToRender[i];
+                Cube cube = Plugin.Configuration.CubesToRender[i];
                 draw.DrawCubeFilled(cube, 0x55FF2222, 0.2f);
                 draw.DrawCube(cube, 0xFFFF0000, 3f);
 
                 if (i == Plugin.CubeToManipulate)
                 {
+                    // Make a copy of the cube
+                    Cube copy = Plugin.Configuration.CubesToRender[i];
+
                     // Do manipulation
-                    draw.DrawGizmo(ref Plugin.CubesToRender[i].Position, ref Plugin.CubesToRender[i].Rotation, ref Plugin.CubesToRender[i].Scale, "WrongWarpFinderGizmo", 0.25f);
+                    draw.DrawGizmo(ref Plugin.Configuration.CubesToRender[i].Position, ref Plugin.Configuration.CubesToRender[i].Rotation, ref Plugin.Configuration.CubesToRender[i].Scale, "WrongWarpFinderGizmo", 0.25f);
+
+                    // If the cube was manipulated, save the config again.
+                    if (copy != Plugin.Configuration.CubesToRender[i])
+                    {
+                        Plugin.Configuration.Save();
+                    }
                 }
             }
 
-            foreach (Vector3 pos in Plugin.PositionsToRender)
+            foreach (Vector3 pos in Plugin.Configuration.PositionsToRender)
             {
                 // Draw an arrow pointing to the position
                 draw.DrawLine3d(pos, pos + new Vector3(0, 2f, 0), 0xFF00FF00, 3f);

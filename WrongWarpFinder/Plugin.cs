@@ -28,10 +28,8 @@ public sealed class Plugin : IDalamudPlugin
     private MainWindow MainWindow { get; init; }
     private RenderOverlay RenderOverlay { get; init; }
 
-    public List<Vector3> PositionsToRender { get; init; } = new List<Vector3>();
-    public List<Cube> CubesToRender { get; init; } = new List<Cube>();
     public int CubeToManipulate { get; set; } = -1;
-    
+
     public Plugin()
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
@@ -44,7 +42,7 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = "A useful message to display in /xlhelp"
+            HelpMessage = "Open the wrong warp finder menu"
         });
 
         PluginInterface.UiBuilder.Draw += DrawUI;
@@ -52,10 +50,6 @@ public sealed class Plugin : IDalamudPlugin
         // Adds another button that is doing the same but for the main ui of the plugin
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
 
-        // Add a simple message to the log with level set to information
-        // Use /xllog to open the log window in-game
-        // Example Output: 00:57:54.959 | INF | [WrongWarpFinder] ===A cool log message from Sample Plugin===
-        Log.Information($"===A cool log message from {PluginInterface.Manifest.Name}===");
         ShowHideOverlay();
     }
 
