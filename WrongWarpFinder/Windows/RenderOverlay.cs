@@ -45,6 +45,19 @@ namespace WrongWarpFinder.Windows
             Io = ImGui.GetIO();
             ImGui.SetWindowSize(Io.DisplaySize);
 
+            for (int i = 0; i < Plugin.CubesToRender.Count; i++)
+            {
+                Cube cube = Plugin.CubesToRender[i];
+                draw.DrawCubeFilled(cube, 0x55FF2222, 0.2f);
+                draw.DrawCube(cube, 0xFFFF0000, 3f);
+
+                if (i == Plugin.CubeToManipulate)
+                {
+                    // Do manipulation
+                    draw.DrawGizmo(ref Plugin.CubesToRender[i].Position, ref Plugin.CubesToRender[i].Rotation, ref Plugin.CubesToRender[i].Scale, "WrongWarpFinderGizmo", 0.25f);
+                }
+            }
+
             foreach (Vector3 pos in Plugin.PositionsToRender)
             {
                 // Draw an arrow pointing to the position

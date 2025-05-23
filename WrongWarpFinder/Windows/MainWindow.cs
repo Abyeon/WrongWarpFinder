@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
@@ -31,6 +32,8 @@ public class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
+        if (Plugin.ClientState.LocalPlayer == null) return;
+
         bool show = Plugin.Configuration.ShowOverlay;
         if (ImGui.Checkbox("Show Overlay", ref show))
         {
@@ -39,15 +42,82 @@ public class MainWindow : Window, IDisposable
             Plugin.ShowHideOverlay();
         }
 
-        if (Plugin.ClientState.LocalPlayer != null)
+        if (ImGui.Button("Add New Cube"))
         {
-            if (ImGui.Button("Add Current Position"))
-            {
-                Plugin.PositionsToRender.Add(Plugin.ClientState.LocalPlayer.Position);
-            }
+            Vector3 pos = Plugin.ClientState.LocalPlayer.Position;
+
+            Plugin.CubeToManipulate = -1;
+            Plugin.CubesToRender.Add(new Cube(pos, Vector3.One, Vector3.Zero));
         }
 
         int id = 0;
+        for (int i = 0; i < Plugin.CubesToRender.Count; i++)
+        {
+            Cube cube = Plugin.CubesToRender[i];
+
+            id++;
+            if (ImGuiComponents.IconButton(id, FontAwesomeIcon.HandPointDown))
+            {
+                Plugin.CubesToRender[i].Position = Plugin.ClientState.LocalPlayer.Position;
+            }
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Move this position to your position");
+            }
+
+            ImGui.SameLine();
+            id++;
+            if (ImGuiComponents.IconButton(id, FontAwesomeIcon.Ruler))
+            {
+                Plugin.CubeToManipulate = i;
+            }
+
+            ImGui.SameLine();
+
+            id++;
+            var ctrl = ImGui.GetIO().KeyCtrl;
+            using (ImRaii.Disabled(!ctrl))
+            {
+                if (ImGuiComponents.IconButton(id, FontAwesomeIcon.Trash))
+                {
+                    Plugin.CubesToRender.RemoveAt(i);
+                    Plugin.CubeToManipulate = -1;
+                }
+            }
+
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Ctrl+click to delete");
+            }
+
+            id++;
+            Vector3 position = cube.Position;
+            if (ImGui.DragFloat3($"Position##{id}", ref position, 0.1f))
+            {
+                Plugin.CubesToRender[i].Position = position;
+            }
+
+            id++;
+            Vector3 scale = cube.Scale;
+            if (ImGui.DragFloat3($"Scale##{id}", ref scale, 0.1f, 0.01f, float.MaxValue))
+            {
+                Plugin.CubesToRender[i].Scale = scale;
+                Plugin.CubesToRender[i].UpdateVerts();
+            }
+
+            id++;
+            Vector3 rotation = cube.Rotation;
+            if (ImGui.DragFloat3($"Rotation##{id}", ref rotation, 0.1f))
+            {
+                Plugin.CubesToRender[i].Rotation = rotation;
+            }
+        }
+
+        if (ImGui.Button("Add Current Position"))
+        {
+            Plugin.PositionsToRender.Add(Plugin.ClientState.LocalPlayer.Position);
+        }
+
         for (int i = 0; i < Plugin.PositionsToRender.Count; i++)
         {
             Vector3 posToRender = Plugin.PositionsToRender[i];
@@ -58,26 +128,32 @@ public class MainWindow : Window, IDisposable
                 Plugin.PositionsToRender[i] = posToRender;
             }
 
-            if (Plugin.ClientState.LocalPlayer != null)
+            ImGui.SameLine();
+            id++;
+            if (ImGuiComponents.IconButton(id, FontAwesomeIcon.HandPointDown))
             {
-                ImGui.SameLine();
-                id++;
-                ImGui.PushID(id);
-                if (ImGuiComponents.IconButton(id, Dalamud.Interface.FontAwesomeIcon.HandPointDown))
-                {
-                    Plugin.PositionsToRender[i] = Plugin.ClientState.LocalPlayer.Position;
-                }
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip("Move this position to your position");
-                }
-                ImGui.PopID();
+                Plugin.PositionsToRender[i] = Plugin.ClientState.LocalPlayer.Position;
+            }
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Move this position to your position");
             }
 
             ImGui.SameLine();
-            if (ImGuiComponents.IconButton(Dalamud.Interface.FontAwesomeIcon.Trash))
+
+            id++;
+            var ctrl = ImGui.GetIO().KeyCtrl;
+            using (ImRaii.Disabled(!ctrl))
             {
-                Plugin.PositionsToRender.Remove(posToRender);
+                if (ImGuiComponents.IconButton(id, FontAwesomeIcon.Trash))
+                {
+                    Plugin.PositionsToRender.RemoveAt(i);
+                }
+            }
+
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Ctrl+click to delete");
             }
         }
     }

@@ -29,7 +29,9 @@ public sealed class Plugin : IDalamudPlugin
     private RenderOverlay RenderOverlay { get; init; }
 
     public List<Vector3> PositionsToRender { get; init; } = new List<Vector3>();
-
+    public List<Cube> CubesToRender { get; init; } = new List<Cube>();
+    public int CubeToManipulate { get; set; } = -1;
+    
     public Plugin()
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();

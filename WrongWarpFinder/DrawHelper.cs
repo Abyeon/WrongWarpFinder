@@ -1,3 +1,5 @@
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using CameraManager = FFXIVClientStructs.FFXIV.Client.Game.Control.CameraManager;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -5,16 +7,90 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using ImGuizmoNET;
 
 namespace WrongWarpFinder
 {
     internal class DrawHelper
     {
         private ImDrawListPtr drawList;
+        private unsafe Camera* Camera => &CameraManager.Instance()->GetActiveCamera()->CameraBase.SceneCamera;
 
         public DrawHelper(ImDrawListPtr drawListPtr)
         {
             this.drawList = drawListPtr;
+        }
+
+        // Basically yoinked from https://github.com/LeonBlade/BDTHPlugin
+        public unsafe void DrawGizmo(ref Vector3 pos, ref Vector3 rotation, ref Vector3 scale, string id, float snapDistance)
+        {
+            ImGuizmo.BeginFrame();
+
+            var cam = Camera->RenderCamera;
+            var view = Camera->ViewMatrix;
+            var proj = cam->ProjectionMatrix;
+
+            var far = cam->FarPlane;
+            var near = cam->NearPlane;
+            var clip = far / (far - near);
+
+            proj.M43 = -(clip * near);
+            proj.M33 = -((far + near) / (far - near));
+            view.M44 = 1.0f;
+
+            ImGuizmo.SetDrawlist();
+            ImGuizmo.Enable(true);
+            ImGuizmo.SetID((int)ImGui.GetID("Gizmo" + id));
+            ImGuizmo.SetOrthographic(false);
+
+            Vector2 windowPos = ImGui.GetWindowPos();
+            ImGuiIOPtr Io = ImGui.GetIO();
+
+            ImGuizmo.SetRect(windowPos.X, windowPos.Y, Io.DisplaySize.X, Io.DisplaySize.Y);
+
+            Matrix4x4 matrix = Matrix4x4.Identity;
+            ImGuizmo.RecomposeMatrixFromComponents(ref pos.X, ref rotation.X, ref scale.X, ref matrix.M11);
+
+            Vector3 snap = Vector3.One * snapDistance;
+
+            OPERATION op = OPERATION.TRANSLATE;
+
+            if (Io.KeyCtrl)
+            {
+                op = OPERATION.SCALE;
+            }
+
+            if (Manipulate(ref view.M11, ref proj.M11, op, MODE.LOCAL, ref matrix.M11, ref snap.X))
+            {
+                ImGuizmo.DecomposeMatrixToComponents(ref matrix.M11, ref pos.X, ref rotation.X, ref scale.X);
+            }
+        }
+
+        private unsafe bool Manipulate(ref float view, ref float proj, OPERATION op, MODE mode, ref float matrix, ref float snap)
+        {
+            fixed (float* native_view = &view)
+            {
+                fixed (float* native_proj = &proj)
+                {
+                    fixed (float* native_matrix = &matrix)
+                    {
+                        fixed (float* native_snap = &snap)
+                        {
+                            return ImGuizmoNative.ImGuizmo_Manipulate(
+                                native_view,
+                                native_proj,
+                                op,
+                                mode,
+                                native_matrix,
+                                null,
+                                native_snap,
+                                null,
+                                null
+                            ) != 0;
+                        }
+                    }
+                }
+            }
         }
 
         public void DrawText3d(string text, Vector3 position, uint color)
@@ -142,6 +218,113 @@ namespace WrongWarpFinder
 
                 DrawLine3d(points[start], points[end], color, thickness);
             }
+        }
+
+        public void DrawCube(Cube cube, uint color, float thickness)
+        {
+            // Array of indices defining lines for each face of the cube
+            int[,] lines =
+            {
+                { 0, 1 },
+                { 1, 2 },
+                { 2, 3 },
+                { 3, 0 }, // top face
+                { 4, 5 },
+                { 5, 6 },
+                { 6, 7 },
+                { 7, 4 }, // bottom face
+                { 0, 4 },
+                { 1, 5 },
+                { 2, 6 },
+                {
+                    3,
+                    7,
+                } // Side edges
+                ,
+            };
+
+            // Get rotated vertices of cube
+            // For some unknown reason this updates the cubes native vertices to be the rotated positions
+            Vector3[] points = RotatePointsAroundOrigin(cube.Vertices, Vector3.Zero, cube.Rotation);
+            cube.UpdateVerts(); // Revert the cubes vertices back to their axis aligned scaled versions.
+
+            // Go through lines and draw them
+            for (int i = 0; i < lines.GetLength(0); i++)
+            {
+                int start = lines[i, 0];
+                int end = lines[i, 1];
+
+                DrawLine3d(
+                    points[start] + cube.Position,
+                    points[end] + cube.Position,
+                    color,
+                    thickness
+                );
+            }
+        }
+
+        public void DrawCubeFilled(Cube cube, uint color, float thickness)
+        {
+            // Arrays of indices for each face
+            int[,] faces =
+            {
+                { 0, 1, 2, 3 }, // top face
+                { 4, 5, 6, 7 }, // bottom face
+                { 0, 4, 7, 3 }, // front face
+                { 1, 5, 6, 2 }, // back face
+                { 1, 5, 4, 0 }, // left face
+                {
+                    3,
+                    7,
+                    6,
+                    2,
+                } // right face
+                ,
+            };
+
+            // Get rotated vertices of cube
+            // For some unknown reason this updates the cubes native vertices to be the rotated positions
+            Vector3[] points = RotatePointsAroundOrigin(cube.Vertices, Vector3.Zero, cube.Rotation);
+            cube.UpdateVerts(); // Revert the cubes vertices back to their axis aligned scaled versions.
+
+            for (int i = 0; i < faces.GetLength(0); i++)
+            {
+                Vector3 p1 = points[faces[i, 0]];
+                Vector3 p2 = points[faces[i, 1]];
+                Vector3 p3 = points[faces[i, 2]];
+                Vector3 p4 = points[faces[i, 3]];
+
+                DrawQuadFilled3d(
+                    p1 + cube.Position,
+                    p2 + cube.Position,
+                    p3 + cube.Position,
+                    p4 + cube.Position,
+                    color
+                );
+            }
+        }
+
+        public Vector3[] RotatePointsAroundOrigin(
+            Vector3[] points,
+            Vector3 origin,
+            Vector3 rotation
+        )
+        {
+            Vector3[] tempVecs = points;
+
+            for (int i = 0; i < 8; i++)
+            {
+                Quaternion rotator = Quaternion.CreateFromYawPitchRoll(
+                    rotation.X,
+                    rotation.Y,
+                    rotation.Z
+                );
+                Vector3 relativeVector = tempVecs[i] - origin;
+                Vector3 rotatedVector = Vector3.Transform(relativeVector, rotator);
+                tempVecs[i] = rotatedVector + origin;
+            }
+
+            return tempVecs;
         }
     }
 }
