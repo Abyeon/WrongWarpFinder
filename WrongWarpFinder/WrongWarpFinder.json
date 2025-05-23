@@ -1,0 +1,13 @@
+{
+  "Author": "Abyeon",
+  "Name": "WrongWarpFinder",
+  "Punchline": "Find Wrong Warps quick!",
+  "Description": "A quick plugin to find Wrong Warps using Racingway rendering tools.",
+  "ApplicableVersion": "any",
+  "Tags": [
+    "Wrongwarp",
+    "Oob",
+    "Abyeon",
+    "Racingway"
+  ]
+}
