@@ -1,13 +1,13 @@
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using CameraManager = FFXIVClientStructs.FFXIV.Client.Game.Control.CameraManager;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
+using Dalamud.Bindings.ImGuizmo;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
-using ImGuizmoNET;
 
 namespace WrongWarpFinder
 {
@@ -22,7 +22,7 @@ namespace WrongWarpFinder
         }
 
         // Basically yoinked from https://github.com/LeonBlade/BDTHPlugin
-        public unsafe void DrawGizmo(ref Vector3 pos, ref Vector3 rotation, ref Vector3 scale, string id, float snapDistance)
+        public unsafe bool DrawGizmo(ref Vector3 pos, ref Vector3 rotation, ref Vector3 scale, string id, float snapDistance)
         {
             ImGuizmo.BeginFrame();
 
@@ -49,24 +49,32 @@ namespace WrongWarpFinder
             ImGuizmo.SetRect(windowPos.X, windowPos.Y, Io.DisplaySize.X, Io.DisplaySize.Y);
 
             Matrix4x4 matrix = Matrix4x4.Identity;
+
             ImGuizmo.RecomposeMatrixFromComponents(ref pos.X, ref rotation.X, ref scale.X, ref matrix.M11);
 
             Vector3 snap = Vector3.One * snapDistance;
 
-            OPERATION op = OPERATION.TRANSLATE;
+            ImGuizmoOperation op = ImGuizmoOperation.Translate;
 
             if (Io.KeyCtrl)
             {
-                op = OPERATION.SCALE;
+                op = ImGuizmoOperation.Scale;
             }
 
-            if (Manipulate(ref view.M11, ref proj.M11, op, MODE.LOCAL, ref matrix.M11, ref snap.X))
+            Manipulate(ref view.M11, ref proj.M11, op, ImGuizmoMode.Local, ref matrix.M11, ref snap.X);
+
+            if (ImGuizmo.IsUsing())
             {
                 ImGuizmo.DecomposeMatrixToComponents(ref matrix.M11, ref pos.X, ref rotation.X, ref scale.X);
+                return true;
+            } else
+            {
+                return false;
             }
         }
 
-        private unsafe bool Manipulate(ref float view, ref float proj, OPERATION op, MODE mode, ref float matrix, ref float snap)
+        // The new bindings use the ImGuizmo class directly
+        private unsafe bool Manipulate(ref float view, ref float proj, ImGuizmoOperation op, ImGuizmoMode mode, ref float matrix, ref float snap)
         {
             fixed (float* native_view = &view)
             {
@@ -76,17 +84,16 @@ namespace WrongWarpFinder
                     {
                         fixed (float* native_snap = &snap)
                         {
-                            return ImGuizmoNative.ImGuizmo_Manipulate(
+                            // Use the ImGuizmo.Manipulate method with proper parameters
+                            return ImGuizmo.Manipulate(
                                 native_view,
                                 native_proj,
                                 op,
                                 mode,
                                 native_matrix,
                                 null,
-                                native_snap,
-                                null,
-                                null
-                            ) != 0;
+                                native_snap
+                            );
                         }
                     }
                 }
