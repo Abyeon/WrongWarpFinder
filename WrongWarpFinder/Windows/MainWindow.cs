@@ -8,6 +8,7 @@ using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Dalamud.Bindings.ImGui;
 using Lumina.Excel.Sheets;
+using WrongWarpFinder.Shapes;
 
 namespace WrongWarpFinder.Windows;
 
@@ -104,7 +105,7 @@ public class MainWindow : Window, IDisposable
             id++;
             if (ImGuiComponents.IconButton(id, FontAwesomeIcon.HandPointDown))
             {
-                Plugin.Configuration.CubesToRender[i].Position = Plugin.ClientState.LocalPlayer.Position;
+                Plugin.Configuration.CubesToRender[i].Transform.Position = Plugin.ClientState.LocalPlayer.Position;
                 Plugin.Configuration.Save();
             }
             if (ImGui.IsItemHovered())
@@ -127,7 +128,7 @@ public class MainWindow : Window, IDisposable
             id++;
             if (ImGuiComponents.IconButton(id, FontAwesomeIcon.Flag))
             {
-                SetFlagMarkerPosition(cube.Position, "Wrong Warp?");
+                SetFlagMarkerPosition(cube.Transform.Position, "Wrong Warp?");
             }
             if (ImGui.IsItemHovered())
             {
@@ -153,27 +154,26 @@ public class MainWindow : Window, IDisposable
             }
 
             id++;
-            Vector3 position = cube.Position;
+            Vector3 position = cube.Transform.Position;
             if (ImGui.DragFloat3($"Position##{id}", ref position, 0.1f))
             {
-                Plugin.Configuration.CubesToRender[i].Position = position;
+                Plugin.Configuration.CubesToRender[i].Transform.Position = position;
                 Plugin.Configuration.Save();
             }
 
             id++;
-            Vector3 scale = cube.Scale;
+            Vector3 scale = cube.Transform.Scale;
             if (ImGui.DragFloat3($"Scale##{id}", ref scale, 0.1f, 0.01f, float.MaxValue))
             {
-                Plugin.Configuration.CubesToRender[i].Scale = scale;
-                Plugin.Configuration.CubesToRender[i].UpdateVerts();
+                Plugin.Configuration.CubesToRender[i].Transform.Scale = scale;
                 Plugin.Configuration.Save();
             }
 
             id++;
-            Vector3 rotation = cube.Rotation;
+            Vector3 rotation = cube.Transform.Rotation * (float)(180/Math.PI);;
             if (ImGui.DragFloat3($"Rotation##{id}", ref rotation, 0.1f))
             {
-                Plugin.Configuration.CubesToRender[i].Rotation = rotation;
+                Plugin.Configuration.CubesToRender[i].Transform.Rotation = rotation * (float)(Math.PI/180);
                 Plugin.Configuration.Save();
             }
         }

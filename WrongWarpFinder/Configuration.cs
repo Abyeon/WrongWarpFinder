@@ -3,13 +3,14 @@ using Dalamud.Plugin;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using WrongWarpFinder.Shapes;
 
 namespace WrongWarpFinder;
 
 [Serializable]
 public class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 0;
+    public int Version { get; set; } = 1;
 
     public bool ShowOverlay { get; set; } = true;
 

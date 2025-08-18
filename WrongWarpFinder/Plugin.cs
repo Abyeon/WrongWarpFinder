@@ -7,6 +7,7 @@ using Dalamud.Plugin.Services;
 using WrongWarpFinder.Windows;
 using System.Numerics;
 using System.Collections.Generic;
+using Pictomancy;
 
 namespace WrongWarpFinder;
 
@@ -33,6 +34,8 @@ public sealed class Plugin : IDalamudPlugin
     public Plugin()
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        
+        PictoService.Initialize(PluginInterface);
 
         MainWindow = new MainWindow(this);
         RenderOverlay = new RenderOverlay(this);
