@@ -59,15 +59,11 @@ namespace WrongWarpFinder.Windows
                         Cube copy = Plugin.Configuration.CubesToRender[i];
 
                         // Do manipulation
-                        Vector3 pos = cube.Transform.Position;
-                        Vector3 scale = cube.Transform.Scale;
-                        Vector3 rotation = new Vector3(cube.Transform.Rotation.Y, cube.Transform.Rotation.X, cube.Transform.Rotation.Z) * (float)(180/Math.PI);
+                        Transform transform = cube.Transform;
 
-                        if (DrawExtensions.Manipulate(ref pos, ref rotation, ref scale,0.25f, "WrongWarpFinderGizmo"))
+                        if (DrawExtensions.Manipulate(ref transform,0.25f, "WrongWarpFinderGizmo"))
                         {
-                            cube.Transform.Position = pos;
-                            cube.Transform.Rotation = new Vector3(rotation.Y, rotation.X, rotation.Z) * (float)(Math.PI/180);
-                            cube.Transform.Scale = scale;
+                            cube.Transform = transform;
                         }
 
                         // If the cube was manipulated, save the config again.

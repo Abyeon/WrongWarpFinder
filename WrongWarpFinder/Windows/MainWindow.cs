@@ -170,10 +170,10 @@ public class MainWindow : Window, IDisposable
             }
 
             id++;
-            Vector3 rotation = cube.Transform.Rotation * (float)(180/Math.PI);;
+            Vector3 rotation = cube.Transform.Rotation;
             if (ImGui.DragFloat3($"Rotation##{id}", ref rotation, 0.1f))
             {
-                Plugin.Configuration.CubesToRender[i].Transform.Rotation = rotation * (float)(Math.PI/180);
+                Plugin.Configuration.CubesToRender[i].Transform.Rotation = rotation;
                 Plugin.Configuration.Save();
             }
         }

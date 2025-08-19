@@ -1,72 +1,27 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
+using Dalamud.Bindings.ImGuizmo;
 
 namespace WrongWarpFinder.Shapes;
 
-public class Transform
+public class Transform(Vector3 position, Vector3 scale, Vector3 rotation)
 {
-    private Vector3 position;
-    private Vector3 scale;
-    private Vector3 rotation;
+    public Vector3 Position = position;
+    public Vector3 Scale = scale;
+    public Vector3 Rotation = rotation;
     
-    public Matrix4x4 TransformMatrix;
-    private Matrix4x4 inverseTransformMatrix;
-    
-    public Transform(Vector3 position, Vector3 scale, Vector3 rotation)
-    {
-        Position = position;
-        Scale = scale;
-        Rotation = rotation;
-
-        UpdateTransformation();
-    }
-    
-    public Vector3 Position
-    {
-        get => position;
-        set
-        {
-            position = value;
-            UpdateTransformation();
-        }
-    }
-
-    public Vector3 Scale
-    {
-        get => scale;
-        set
-        {
-            scale = value;
-            UpdateTransformation();
-        }
-    }
-
-    public Vector3 Rotation
-    {
-        get => rotation;
-        set
-        {
-            rotation = value;
-            UpdateTransformation();
-        }
-    }
-
     public Matrix4x4 GetTransformation()
     {
-        return TransformMatrix;
-    }
+        Matrix4x4 mat = Matrix4x4.Identity;
+        ImGuizmo.RecomposeMatrixFromComponents(ref Position.X, ref Rotation.X, ref Scale.X, ref mat.M11);
 
-    public Matrix4x4 GetInverseTransformation()
-    {
-        return inverseTransformMatrix;
-    }
-
-    private void UpdateTransformation()
-    {
-        Matrix4x4 s = Matrix4x4.CreateScale(scale);
-        Matrix4x4 r = Matrix4x4.CreateFromYawPitchRoll(rotation.X, rotation.Y, rotation.Z);
-        Matrix4x4 t = Matrix4x4.CreateTranslation(position);
-        TransformMatrix = s * r * t;
-        
-        Matrix4x4.Invert(TransformMatrix, out inverseTransformMatrix);
+        return mat;
+        // var s = Matrix4x4.CreateScale(Scale);
+        // var rY = Matrix4x4.CreateRotationY(Rotation.Y  * (float)(Math.PI/180));
+        // var rX = Matrix4x4.CreateRotationX(Rotation.X  * (float)(Math.PI/180));
+        // var rZ = Matrix4x4.CreateRotationZ(Rotation.Z  * (float)(Math.PI/180));
+        // var t = Matrix4x4.CreateTranslation(Position);
+        //
+        // return s * rY * rX * rZ * t;
     }
 }

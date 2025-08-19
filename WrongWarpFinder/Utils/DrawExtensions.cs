@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Bindings.ImGuizmo;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
@@ -12,7 +13,7 @@ public static class DrawExtensions
 {
     private static unsafe Camera* Camera => &CameraManager.Instance()->GetActiveCamera()->CameraBase.SceneCamera;
 
-    public static unsafe bool Manipulate(ref Vector3 pos, ref Vector3 rotation, ref Vector3 scale, float snapDistance, string id)
+    public static unsafe bool Manipulate(ref Transform transform, float snapDistance, string id)
     {
         ImGuizmo.BeginFrame();
         
@@ -37,10 +38,9 @@ public static class DrawExtensions
         ImGuiIOPtr io = ImGui.GetIO();
         
         ImGuizmo.SetRect(windowPos.X, windowPos.Y, io.DisplaySize.X, io.DisplaySize.Y);
-        
-        Matrix4x4 matrix = Matrix4x4.Identity;
 
-        ImGuizmo.RecomposeMatrixFromComponents(ref pos.X, ref rotation.X, ref scale.X, ref matrix.M11);
+        Matrix4x4 matrix = Matrix4x4.Identity;
+        ImGuizmo.RecomposeMatrixFromComponents(ref transform.Position.X, ref transform.Rotation.X, ref transform.Scale.X, ref matrix.M11);
         
         Vector3 snap = Vector3.One * snapDistance;
 
@@ -49,39 +49,58 @@ public static class DrawExtensions
         if (io.KeyCtrl)
         {
             op = ImGuizmoOperation.Scale;
-        } 
+        } else if (io.KeyShift)
+        {
+            op = ImGuizmoOperation.Rotate;
+        }
 
-        _manipulate(ref view.M11, ref proj.M11, op, ImGuizmoMode.Local, ref matrix.M11, ref snap.X);
+        SafeManipulate(ref view.M11, ref proj.M11, op, ImGuizmoMode.Local, ref matrix.M11, ref snap.X);
         
         if (ImGuizmo.IsUsing())
         {
-            ImGuizmo.DecomposeMatrixToComponents(ref matrix.M11, ref pos.X, ref rotation.X, ref scale.X);
+            Vector3 pos = new(), rot = new(), scale = new();
+            ImGuizmo.DecomposeMatrixToComponents(ref matrix.M11, ref pos.X, ref rot.X, ref scale.X);
+
+            if (op == ImGuizmoOperation.Translate)
+            {
+                transform.Position = pos;
+            }
+
+            if (op == ImGuizmoOperation.Rotate)
+            {
+                transform.Rotation = rot;
+            }
+
+            if (op == ImGuizmoOperation.Scale)
+            {
+                transform.Scale = scale;
+            }
+            
             return true;
         }
         
         return false;
     }
     
-    // The new bindings use the ImGuizmo class directly
-    private static unsafe bool _manipulate(ref float view, ref float proj, ImGuizmoOperation op, ImGuizmoMode mode, ref float matrix, ref float snap)
+    private static unsafe bool SafeManipulate(ref float view, ref float proj, ImGuizmoOperation op, ImGuizmoMode mode, ref float matrix, ref float snap)
     {
-        fixed (float* native_view = &view)
+        fixed (float* nativeView = &view)
         {
-            fixed (float* native_proj = &proj)
+            fixed (float* nativeProj = &proj)
             {
-                fixed (float* native_matrix = &matrix)
+                fixed (float* nativeMatrix = &matrix)
                 {
-                    fixed (float* native_snap = &snap)
+                    fixed (float* nativeSnap = &snap)
                     {
                         // Use the ImGuizmo.Manipulate method with proper parameters
                         return ImGuizmo.Manipulate(
-                            native_view,
-                            native_proj,
+                            nativeView,
+                            nativeProj,
                             op,
                             mode,
-                            native_matrix,
+                            nativeMatrix,
                             null,
-                            native_snap
+                            nativeSnap
                         );
                     }
                 }
