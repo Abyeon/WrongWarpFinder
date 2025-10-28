@@ -13,6 +13,8 @@ public class Configuration : IPluginConfiguration
     public int Version { get; set; } = 1;
 
     public bool ShowOverlay { get; set; } = true;
+    public bool ShowDebugInfo { get; set; } = false;
+    public bool EvilMode { get; set; } = false;
 
     public List<Vector3> PositionsToRender { get; init; } = new List<Vector3>();
     public List<Cube> CubesToRender { get; init; } = new List<Cube>();

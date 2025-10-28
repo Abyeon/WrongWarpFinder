@@ -163,4 +163,15 @@ public static class DrawExtensions
         drawList.PathLineTo(p2);
         drawList.PathStroke(col, PctStrokeFlags.Closed);
     }
+
+    public static void AddPositionArrow(this PctDrawList drawList, Vector3 pos, string text, uint col)
+    {
+        // Draw an arrow pointing to the position
+        drawList.AddPathLine(pos, pos + new Vector3(0, 2f, 0), col);
+        drawList.AddPathLine(pos, pos + new Vector3(0.5f, 0.5f, 0), col);
+        drawList.AddPathLine(pos, pos + new Vector3(-0.5f, 0.5f, 0), col);
+        
+        // Draw the text saying the position
+        drawList.AddText(pos + new Vector3(0, 2.5f, 0),0xFFFFFFFF, text, 1f);
+    }
 }

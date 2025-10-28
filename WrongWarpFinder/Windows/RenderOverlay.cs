@@ -3,9 +3,13 @@ using Dalamud.Interface.Windowing;
 using Dalamud.Bindings.ImGui;
 using System;
 using System.Numerics;
+using Dalamud.Game.ClientState.Objects.SubKinds;
+using Dalamud.Game.ClientState.Objects.Types;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using Pictomancy;
 using WrongWarpFinder.Shapes;
 using WrongWarpFinder.Utils;
+using WrongWarpFinder.Utils.Interop;
 
 namespace WrongWarpFinder.Windows
 {
@@ -34,56 +38,58 @@ namespace WrongWarpFinder.Windows
             throw new NotImplementedException();
         }
 
+        private unsafe void DrawDebug(PctDrawList drawList)
+        {
+            var info = WarpInfo.Instance();
+            var lastHit = info->ZoneLineLastHit;
+            var warp = info->WarpPos;
+            drawList.AddPositionArrow(lastHit, "Zone Line Hit", 0xFF00FFFF);
+            drawList.AddPositionArrow(warp, "Warp Position", 0xFFFF0000);
+            //drawList.AddPathLine(, Plugin.LineToDraw[1], 0xFF00FFFF);
+        }
+        
         public override unsafe void Draw()
         {
             ImGuiHelpers.SetWindowPosRelativeMainViewport("Render Overlay", new Vector2(0, 0));
 
             ImDrawListPtr imDrawList = ImGui.GetWindowDrawList();
-            //DrawHelper draw = new DrawHelper(imDrawList);
             
             io = ImGui.GetIO();
             ImGui.SetWindowSize(io.DisplaySize);
 
-            using (var drawList = PictoService.Draw())
-            {
-                if (drawList == null) return;
+            using var drawList = PictoService.Draw();
+            if (drawList == null) return;
+            DrawDebug(drawList);
                 
-                for (int i = 0; i < Plugin.Configuration.CubesToRender.Count; i++)
+            for (int i = 0; i < Plugin.Configuration.CubesToRender.Count; i++)
+            {
+                Cube cube = Plugin.Configuration.CubesToRender[i];
+                drawList.AddCubeFilled(cube, 0x55FF2222);
+
+                if (i == Plugin.CubeToManipulate)
                 {
-                    Cube cube = Plugin.Configuration.CubesToRender[i];
-                    drawList.AddCubeFilled(cube, 0x55FF2222);
+                    // Make a copy of the cube
+                    Cube copy = Plugin.Configuration.CubesToRender[i];
 
-                    if (i == Plugin.CubeToManipulate)
+                    // Do manipulation
+                    Transform transform = cube.Transform;
+
+                    if (DrawExtensions.Manipulate(ref transform,0.25f, "WrongWarpFinderGizmo"))
                     {
-                        // Make a copy of the cube
-                        Cube copy = Plugin.Configuration.CubesToRender[i];
+                        cube.Transform = transform;
+                    }
 
-                        // Do manipulation
-                        Transform transform = cube.Transform;
-
-                        if (DrawExtensions.Manipulate(ref transform,0.25f, "WrongWarpFinderGizmo"))
-                        {
-                            cube.Transform = transform;
-                        }
-
-                        // If the cube was manipulated, save the config again.
-                        if (copy != Plugin.Configuration.CubesToRender[i])
-                        {
-                            Plugin.Configuration.Save();
-                        }
+                    // If the cube was manipulated, save the config again.
+                    if (copy != Plugin.Configuration.CubesToRender[i])
+                    {
+                        Plugin.Configuration.Save();
                     }
                 }
+            }
                 
-                foreach (Vector3 pos in Plugin.Configuration.PositionsToRender)
-                {
-                    // Draw an arrow pointing to the position
-                    drawList.AddPathLine(pos, pos + new Vector3(0, 2f, 0), 0xFF00FF00);
-                    drawList.AddPathLine(pos, pos + new Vector3(0.5f, 0.5f, 0), 0xFF00FF00);
-                    drawList.AddPathLine(pos, pos + new Vector3(-0.5f, 0.5f, 0), 0xFF00FF00);
-
-                    // Draw the text saying the position
-                    drawList.AddText(pos + new Vector3(0, 3f, 0), 0xFFFFFFFF, pos.ToString(), 1f);
-                }
+            foreach (Vector3 pos in Plugin.Configuration.PositionsToRender)
+            {
+                drawList.AddPositionArrow(pos, pos.ToString(), 0xFF00FF00);
             }
         }
     }

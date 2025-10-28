@@ -7,8 +7,17 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Colors;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.Game.Control;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using FFXIVClientStructs.FFXIV.Client.LayoutEngine;
 using Lumina.Excel.Sheets;
+using Lumina.Text.ReadOnly;
 using WrongWarpFinder.Shapes;
+using WrongWarpFinder.Utils;
+using WrongWarpFinder.Utils.Interop;
 
 namespace WrongWarpFinder.Windows;
 
@@ -48,11 +57,72 @@ public class MainWindow : Window, IDisposable
         }
     }
 
+    private unsafe void DrawWarpPositions()
+    {
+        try
+        {
+            if (!Plugin.Configuration.ShowDebugInfo) return;
+            var info = WarpInfo.Instance();
+            if (info is null) return;
+            
+            var pos = info->WarpPos;
+            ImGui.Text($"Warping to: {pos}");
+            
+            var warpingState = info->WarpingState;
+            ImGui.Text($"Warping State: {warpingState}");
+            
+            //ImGui.Text($"BgName: {*info->BgName}");
+            //ImGui.Text($"Unk184: {info->Unk184}");
+            ImGui.Text($"Unk188: {info->Unk188}");
+            ImGui.Text($"TerritoryID: {info->TerritoryId}");
+            
+            ReadOnlySeString territory = "No zone fetched";
+            if (info->TerritoryId >= 1)
+                territory = Plugin.DataManager.GetExcelSheet<TerritoryType>().GetRow(info->TerritoryId).PlaceName.Value.Name;
+            
+            ImGui.Text($"TerritoryName: {territory}");
+        }
+        catch (Exception ex)
+        {
+            Plugin.Log.Error(ex.ToString());
+        }
+    }
+
+    private unsafe void DrawWarpEditor(int id)
+    {
+        using var _ = ImRaii.Disabled(!Plugin.Configuration.EvilMode);
+        
+        var info = WarpInfo.Instance();
+        if (info is null) return;
+        if (Plugin.ClientState.LocalPlayer == null) return;
+
+        try
+        {
+            if (ImGuiComponents.IconButton(id, FontAwesomeIcon.HandPointDown))
+            {
+                Plugin.LastWarpPos = Plugin.ClientState.LocalPlayer.Position;
+                info->WarpPos = Plugin.ClientState.LocalPlayer.Position;
+            }
+            ImGui.SameLine();
+        
+            Vector3 pos = info->WarpPos;
+            if (ImGui.DragFloat3("Warp Position", ref pos, 0.1f))
+            {
+                Plugin.LastWarpPos = pos;
+                info->WarpPos = pos;
+            }
+        }
+        catch (Exception ex)
+        {
+            Plugin.Log.Error(ex.ToString());
+        }
+    }
+
     public override void Draw()
     {
         if (Plugin.ClientState.LocalPlayer == null) return;
         var ctrl = ImGui.GetIO().KeyCtrl;
-
+        
         bool show = Plugin.Configuration.ShowOverlay;
         if (ImGui.Checkbox("Show Overlay", ref show))
         {
@@ -60,6 +130,28 @@ public class MainWindow : Window, IDisposable
             Plugin.Configuration.Save();
             Plugin.ShowHideOverlay();
         }
+        
+        bool debug = Plugin.Configuration.ShowDebugInfo;
+        if (ImGui.Checkbox("Debug Info", ref debug))
+        {
+            Plugin.Configuration.ShowDebugInfo = debug;
+            Plugin.Configuration.Save();
+        }
+        ImGuiComponents.HelpMarker("This is mostly for dev purposes, but you may find the info appealing.");
+        
+        DrawWarpPositions();
+        
+        bool evil = Plugin.Configuration.EvilMode;
+        if (ImGui.Checkbox("Evil Mode", ref evil))
+        {
+            Plugin.Configuration.EvilMode = evil;
+            Plugin.Configuration.Save();
+        }
+        ImGuiComponents.HelpMarker("This lets you set your warp position via this plugin. I do not recommend this.",
+                                   FontAwesomeIcon.ExclamationTriangle, ImGuiColors.DalamudRed);
+        
+        int id = 0;
+        DrawWarpEditor(id);
 
         if (Plugin.CubeToManipulate != -1)
         {
@@ -69,7 +161,7 @@ public class MainWindow : Window, IDisposable
                 Plugin.CubeToManipulate = -1;
             }
         }
-
+        
         if (ImGui.Button("Add New Cube"))
         {
             Vector3 pos = Plugin.ClientState.LocalPlayer.Position;
@@ -97,7 +189,6 @@ public class MainWindow : Window, IDisposable
             ImGui.SetTooltip("Ctrl+click to activate");
         }
 
-        int id = 0;
         for (int i = 0; i < Plugin.Configuration.CubesToRender.Count; i++)
         {
             Cube cube = Plugin.Configuration.CubesToRender[i];
