@@ -90,7 +90,7 @@ public class MainWindow : Window, IDisposable
 
     private unsafe void DrawWarpEditor(int id)
     {
-        using var _ = ImRaii.Disabled(!Plugin.Configuration.EvilMode);
+        using var _ = ImRaii.Disabled();
         
         var info = WarpInfo.Instance();
         if (info is null) return;
@@ -98,12 +98,12 @@ public class MainWindow : Window, IDisposable
 
         try
         {
-            if (ImGuiComponents.IconButton(id, FontAwesomeIcon.HandPointDown))
-            {
-                Plugin.LastWarpPos = Plugin.ClientState.LocalPlayer.Position;
-                info->WarpPos = Plugin.ClientState.LocalPlayer.Position;
-            }
-            ImGui.SameLine();
+            // if (ImGuiComponents.IconButton(id, FontAwesomeIcon.HandPointDown))
+            // {
+            //     Plugin.LastWarpPos = Plugin.ClientState.LocalPlayer.Position;
+            //     info->WarpPos = Plugin.ClientState.LocalPlayer.Position;
+            // }
+            // ImGui.SameLine();
         
             Vector3 pos = info->WarpPos;
             if (ImGui.DragFloat3("Warp Position", ref pos, 0.1f))
@@ -140,15 +140,6 @@ public class MainWindow : Window, IDisposable
         ImGuiComponents.HelpMarker("This is mostly for dev purposes, but you may find the info appealing.");
         
         DrawWarpPositions();
-        
-        bool evil = Plugin.Configuration.EvilMode;
-        if (ImGui.Checkbox("Evil Mode", ref evil))
-        {
-            Plugin.Configuration.EvilMode = evil;
-            Plugin.Configuration.Save();
-        }
-        ImGuiComponents.HelpMarker("This lets you set your warp position via this plugin. I do not recommend this.",
-                                   FontAwesomeIcon.ExclamationTriangle, ImGuiColors.DalamudRed);
         
         int id = 0;
         DrawWarpEditor(id);
