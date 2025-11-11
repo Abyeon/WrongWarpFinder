@@ -127,6 +127,14 @@ public class MainWindow : Window, IDisposable
             Plugin.Configuration.Save();
         }
         
+        bool onlyBroken = Plugin.Configuration.ShowOnlyBrokenRanges;
+        if (ImGui.Checkbox("Only show broken exits", ref onlyBroken))
+        {
+            Plugin.Configuration.ShowOnlyBrokenRanges = onlyBroken;
+            Plugin.UpdateBrokenExitRanges(Plugin.ClientState.TerritoryType);
+            Plugin.Configuration.Save();
+        }
+        
         bool debug = Plugin.Configuration.ShowDebugInfo;
         if (ImGui.Checkbox("Debug Info", ref debug))
         {
@@ -134,6 +142,19 @@ public class MainWindow : Window, IDisposable
             Plugin.Configuration.Save();
         }
         ImGuiComponents.HelpMarker("This is mostly for dev purposes, but you may find the info appealing.");
+
+        if (ImGui.Button("Scan All Territories"))
+        {
+            BrokenRangeFinder.ScanAll();
+        }
+        
+        // ImGui.SameLine();
+        // var file = Plugin.Configuration.FileToScan;
+        // if (ImGui.ListBox("FileName to Scan", ref file, BrokenRangeFinder.FileNames))
+        // {
+        //     Plugin.Configuration.FileToScan = file;
+        //     Plugin.Configuration.Save();
+        // }
         
         DrawWarpPositions();
         

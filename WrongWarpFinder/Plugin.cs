@@ -69,6 +69,8 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.Draw += DrawUI;
         Framework.Update += Update;
         ClientState.ZoneInit += OnZoneInit;
+        
+        UpdateBrokenExitRanges(ClientState.TerritoryType);
 
         // Adds another button that is doing the same but for the main ui of the plugin
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
@@ -76,54 +78,27 @@ public sealed class Plugin : IDalamudPlugin
         ShowHideOverlay();
     }
 
-    private void OnZoneInit(ZoneInitEventArgs zone)
+    public void UpdateBrokenExitRanges(uint id)
     {
         BrokenExitRanges = [];
-        if (zone.TerritoryType.Bg.IsEmpty) return;
-        
-        var bgPath = zone.TerritoryType.Bg.ToString();
-        var lastSeparatorPos = bgPath.LastIndexOf('/');
-        
-        if (lastSeparatorPos == -1) return;
-        var filePath = $"bg/{bgPath[..lastSeparatorPos]}/planmap.lgb";
-        
-        var lgb = DataManager.GameData.GetFile<LgbFile>(filePath);
+        var broken = BrokenRangeFinder.ScanTerritory(id, showAll: !Configuration.ShowOnlyBrokenRanges);
 
-        if (lgb is null) return;
-
-        var acceptedTypes = new List<LayerEntryType>();
-        acceptedTypes.Add(LayerEntryType.ExitRange);
-        acceptedTypes.Add(LayerEntryType.PopRange);
+        if (broken.Count == 0) return;
         
-        Log.Verbose("Reading current territory lgb file");
-        foreach (var layer in lgb.Layers)
+        if (Configuration.Announcements) ChatGui.Print("Detected broken exit range!");
+        float radToDeg = 180f / (float)Math.PI;
+        foreach (var obj in broken)
         {
-            Log.Verbose($"Layer: {layer.Name}");
-            var objects = layer.InstanceObjects;
-            
-            foreach (var obj in objects)
-            {
-                if (!acceptedTypes.Contains(obj.AssetType)) continue;
-                
-                Log.Verbose($"{obj.AssetType.ToString()} : [{obj.Transform.Translation.X}, {obj.Transform.Translation.Y}, {obj.Transform.Translation.Z}]");
-
-                switch (obj.AssetType)
-                {
-                    case LayerEntryType.ExitRange:
-                        var exit = (LayerCommon.ExitRangeInstanceObject)obj.Object;
-                        Log.Verbose(exit.DestInstanceId.ToString());
-                        if (exit.DestInstanceId == 0)
-                        {
-                            if (Configuration.Announcements) ChatGui.Print("Detected broken exit range!");
-                            var cube = new Cube(new Vector3(obj.Transform.Translation.X, obj.Transform.Translation.Y - obj.Transform.Scale.Y, obj.Transform.Translation.Z), 
-                                                new Vector3(obj.Transform.Scale.X,  obj.Transform.Scale.Y * 2, obj.Transform.Scale.Z), 
-                                                new Vector3(obj.Transform.Rotation.X,  obj.Transform.Rotation.Y, obj.Transform.Rotation.Z));
-                            BrokenExitRanges.Add(cube);
-                        }
-                        break;
-                }
-            }
+            var cube = new Cube(new Vector3(obj.Transform.Translation.X, obj.Transform.Translation.Y - obj.Transform.Scale.Y, obj.Transform.Translation.Z), 
+                                new Vector3(obj.Transform.Scale.X,  obj.Transform.Scale.Y * 2, obj.Transform.Scale.Z), 
+                                new Vector3(obj.Transform.Rotation.X * radToDeg,  obj.Transform.Rotation.Y * radToDeg, obj.Transform.Rotation.Z * radToDeg));
+            BrokenExitRanges.Add(cube);
         }
+    }
+
+    private void OnZoneInit(ZoneInitEventArgs zone)
+    {
+        UpdateBrokenExitRanges(zone.TerritoryType.RowId);
     }
 
     public Vector3? LastWarpPos;

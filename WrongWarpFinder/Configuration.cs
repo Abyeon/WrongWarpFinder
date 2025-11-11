@@ -15,6 +15,7 @@ public class Configuration : IPluginConfiguration
     public bool Announcements { get; set; } = true;
     public bool ShowOverlay { get; set; } = true;
     public bool ShowDebugInfo { get; set; } = false;
+    public bool ShowOnlyBrokenRanges { get; set; } = false;
 
     public List<Vector3> PositionsToRender { get; init; } = new List<Vector3>();
     public List<Cube> CubesToRender { get; init; } = new List<Cube>();
