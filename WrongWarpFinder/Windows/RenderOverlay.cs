@@ -45,6 +45,12 @@ namespace WrongWarpFinder.Windows
             var warp = info->WarpPos;
             drawList.AddPositionArrow(lastHit, "Zone Line Hit", 0xFF00FFFF);
             drawList.AddPositionArrow(warp, "Warp Position", 0xFFFF0000);
+
+            foreach (var cube in Plugin.BrokenExitRanges)
+            {
+                drawList.AddText(cube.Transform.Position + new Vector3(0, cube.Transform.Scale.Y + 0.5f, 0), 0xFFFFFFFF, "Broken Exit Range", 1);
+                drawList.AddCubeFilled(cube, 0x550000FF);
+            }
             //drawList.AddPathLine(, Plugin.LineToDraw[1], 0xFF00FFFF);
         }
         

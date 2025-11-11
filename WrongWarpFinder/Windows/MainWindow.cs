@@ -98,19 +98,8 @@ public class MainWindow : Window, IDisposable
 
         try
         {
-            // if (ImGuiComponents.IconButton(id, FontAwesomeIcon.HandPointDown))
-            // {
-            //     Plugin.LastWarpPos = Plugin.ClientState.LocalPlayer.Position;
-            //     info->WarpPos = Plugin.ClientState.LocalPlayer.Position;
-            // }
-            // ImGui.SameLine();
-        
             Vector3 pos = info->WarpPos;
-            if (ImGui.DragFloat3("Warp Position", ref pos, 0.1f))
-            {
-                Plugin.LastWarpPos = pos;
-                info->WarpPos = pos;
-            }
+            if (ImGui.DragFloat3("Warp Position", ref pos, 0.1f)) { }
         }
         catch (Exception ex)
         {
@@ -129,6 +118,13 @@ public class MainWindow : Window, IDisposable
             Plugin.Configuration.ShowOverlay = show;
             Plugin.Configuration.Save();
             Plugin.ShowHideOverlay();
+        }
+        
+        bool announce = Plugin.Configuration.Announcements;
+        if (ImGui.Checkbox("Announce changes", ref announce))
+        {
+            Plugin.Configuration.Announcements = announce;
+            Plugin.Configuration.Save();
         }
         
         bool debug = Plugin.Configuration.ShowDebugInfo;

@@ -12,6 +12,7 @@ public class Configuration : IPluginConfiguration
 {
     public int Version { get; set; } = 1;
 
+    public bool Announcements { get; set; } = true;
     public bool ShowOverlay { get; set; } = true;
     public bool ShowDebugInfo { get; set; } = false;
 
