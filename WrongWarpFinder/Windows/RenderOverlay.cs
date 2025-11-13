@@ -56,6 +56,7 @@ namespace WrongWarpFinder.Windows
         
         public override unsafe void Draw()
         {
+            if (!Plugin.ClientState.IsLoggedIn) return;
             ImGuiHelpers.SetWindowPosRelativeMainViewport("Render Overlay", new Vector2(0, 0));
 
             ImDrawListPtr imDrawList = ImGui.GetWindowDrawList();

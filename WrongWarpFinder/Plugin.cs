@@ -43,6 +43,7 @@ public sealed class Plugin : IDalamudPlugin
     private MainWindow MainWindow { get; init; }
     private RenderOverlay RenderOverlay { get; init; }
     public WarpHook WarpHook { get; init; }
+    public FadeHandler FadeHandler { get; init; }
     public int CubeToManipulate { get; set; } = -1;
 
     public List<Cube> BrokenExitRanges { get; set; } = [];
@@ -65,6 +66,7 @@ public sealed class Plugin : IDalamudPlugin
         });
 
         WarpHook = new WarpHook(this);
+        FadeHandler = new FadeHandler(this);
 
         PluginInterface.UiBuilder.Draw += DrawUI;
         Framework.Update += Update;
@@ -85,7 +87,7 @@ public sealed class Plugin : IDalamudPlugin
 
         if (broken.Count == 0) return;
         
-        if (Configuration.Announcements) ChatGui.Print("Detected broken exit range!");
+        //if (Configuration.Announcements) ChatGui.Print("Detected broken exit range!");
         float radToDeg = 180f / (float)Math.PI;
         foreach (var obj in broken)
         {
@@ -152,6 +154,7 @@ public sealed class Plugin : IDalamudPlugin
         WindowSystem.RemoveAllWindows();
         MainWindow.Dispose();
         WarpHook.Dispose();
+        FadeHandler.Dispose();
 
         CommandManager.RemoveHandler(CommandName);
         Framework.Update -= Update;

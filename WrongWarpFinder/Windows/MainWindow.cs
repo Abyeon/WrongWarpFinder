@@ -111,6 +111,23 @@ public class MainWindow : Window, IDisposable
     {
         if (Plugin.ClientState.LocalPlayer == null) return;
         var ctrl = ImGui.GetIO().KeyCtrl;
+
+        bool hideFade = Plugin.Configuration.HideFade;
+        if (ImGui.Checkbox("Hide loading fade", ref hideFade))
+        {
+            Plugin.Configuration.HideFade = hideFade;
+
+            if (hideFade)
+            {
+                Plugin.FadeHandler.Enable();
+            }
+            else
+            {
+                Plugin.FadeHandler.Dispose();
+            }
+
+            Plugin.Configuration.Save();
+        }
         
         bool show = Plugin.Configuration.ShowOverlay;
         if (ImGui.Checkbox("Show Overlay", ref show))
@@ -143,10 +160,24 @@ public class MainWindow : Window, IDisposable
         }
         ImGuiComponents.HelpMarker("This is mostly for dev purposes, but you may find the info appealing.");
 
+        #if DEBUG
+        
         if (ImGui.Button("Scan All Territories"))
         {
             BrokenRangeFinder.ScanAll();
         }
+
+        if (ImGui.Button("Scan for mismatch Ids"))
+        {
+            BrokenRangeFinder.ScanForBrokenReturnIds();
+        }
+
+        if (ImGui.Button("Log current territory"))
+        {
+            BrokenRangeFinder.LogTerritoryInfo(Plugin.ClientState.TerritoryType);
+        }
+        
+        #endif
         
         // ImGui.SameLine();
         // var file = Plugin.Configuration.FileToScan;

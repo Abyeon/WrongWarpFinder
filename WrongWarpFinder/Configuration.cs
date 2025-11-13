@@ -14,6 +14,7 @@ public class Configuration : IPluginConfiguration
 
     public bool Announcements { get; set; } = true;
     public bool ShowOverlay { get; set; } = true;
+    public bool HideFade { get; set; } = false;
     public bool ShowDebugInfo { get; set; } = false;
     public bool ShowOnlyBrokenRanges { get; set; } = false;
 
