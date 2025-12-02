@@ -94,7 +94,6 @@ public class MainWindow : Window, IDisposable
         
         var info = WarpInfo.Instance();
         if (info is null) return;
-        if (Plugin.ClientState.LocalPlayer == null) return;
 
         try
         {
@@ -107,9 +106,15 @@ public class MainWindow : Window, IDisposable
         }
     }
 
+    private unsafe Vector3 GetCameraPosition()
+    {
+        var man = CameraManager.Instance();
+        
+        return man->GetActiveCamera()->SceneCamera.Position;
+    }
+
     public override void Draw()
     {
-        if (Plugin.ClientState.LocalPlayer == null) return;
         var ctrl = ImGui.GetIO().KeyCtrl;
 
         bool hideFade = Plugin.Configuration.HideFade;
@@ -171,23 +176,11 @@ public class MainWindow : Window, IDisposable
         {
             BrokenRangeFinder.ScanForBrokenReturnIds();
         }
-
-        if (ImGui.Button("Log current territory"))
-        {
-            BrokenRangeFinder.LogTerritoryInfo(Plugin.ClientState.TerritoryType);
-        }
         
         #endif
         
-        // ImGui.SameLine();
-        // var file = Plugin.Configuration.FileToScan;
-        // if (ImGui.ListBox("FileName to Scan", ref file, BrokenRangeFinder.FileNames))
-        // {
-        //     Plugin.Configuration.FileToScan = file;
-        //     Plugin.Configuration.Save();
-        // }
-        
         DrawWarpPositions();
+        if (Plugin.ObjectTable.LocalPlayer == null) return;
         
         int id = 0;
         DrawWarpEditor(id);
@@ -203,16 +196,26 @@ public class MainWindow : Window, IDisposable
         
         if (ImGui.Button("Add New Cube"))
         {
-            Vector3 pos = Plugin.ClientState.LocalPlayer.Position;
+            Vector3 pos = Plugin.ObjectTable.LocalPlayer.Position;
 
             Plugin.CubeToManipulate = -1;
             Plugin.Configuration.CubesToRender.Add(new Cube(pos, Vector3.One, Vector3.Zero));
             Plugin.Configuration.Save();
         }
 
-        using (ImRaii.Disabled(!ctrl))
+        ImGui.SameLine();
+        id++;
+        if (ImGuiComponents.IconButton(id, FontAwesomeIcon.Camera))
         {
-            if (Plugin.Configuration.CubesToRender.Count > 0)
+            Vector3 pos = GetCameraPosition();
+            Plugin.CubeToManipulate = -1;
+            Plugin.Configuration.CubesToRender.Add(new Cube(pos, Vector3.One, Vector3.Zero));
+            Plugin.Configuration.Save();
+        }
+
+        if (Plugin.Configuration.CubesToRender.Count > 0)
+        {
+            using (ImRaii.Disabled(!ctrl))
             {
                 ImGui.SameLine();
                 if (ImGui.Button("Clear Cubes"))
@@ -221,11 +224,11 @@ public class MainWindow : Window, IDisposable
                     Plugin.Configuration.Save();
                 }
             }
-        }
-
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-        {
-            ImGui.SetTooltip("Ctrl+click to activate");
+            
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            {
+                ImGui.SetTooltip("Ctrl+click to activate");
+            }
         }
 
         for (int i = 0; i < Plugin.Configuration.CubesToRender.Count; i++)
@@ -235,7 +238,7 @@ public class MainWindow : Window, IDisposable
             id++;
             if (ImGuiComponents.IconButton(id, FontAwesomeIcon.HandPointDown))
             {
-                Plugin.Configuration.CubesToRender[i].Transform.Position = Plugin.ClientState.LocalPlayer.Position;
+                Plugin.Configuration.CubesToRender[i].Transform.Position = Plugin.ObjectTable.LocalPlayer.Position;
                 Plugin.Configuration.Save();
             }
             if (ImGui.IsItemHovered())
@@ -310,13 +313,22 @@ public class MainWindow : Window, IDisposable
 
         if (ImGui.Button("Add Current Position"))
         {
-            Plugin.Configuration.PositionsToRender.Add(Plugin.ClientState.LocalPlayer.Position);
+            Plugin.Configuration.PositionsToRender.Add(Plugin.ObjectTable.LocalPlayer.Position);
             Plugin.Configuration.Save();
         }
 
-        using (ImRaii.Disabled(!ctrl))
+        ImGui.SameLine();
+        id++;
+        if (ImGuiComponents.IconButton(id, FontAwesomeIcon.Camera))
         {
-            if (Plugin.Configuration.PositionsToRender.Count > 0)
+            Vector3 pos = GetCameraPosition();
+            Plugin.Configuration.PositionsToRender.Add(pos);
+            Plugin.Configuration.Save();
+        }
+        
+        if (Plugin.Configuration.PositionsToRender.Count > 0)
+        {
+            using (ImRaii.Disabled(!ctrl))
             {
                 ImGui.SameLine();
                 if (ImGui.Button("Clear Positions"))
@@ -325,11 +337,11 @@ public class MainWindow : Window, IDisposable
                     Plugin.Configuration.Save();
                 }
             }
-        }
-
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-        {
-            ImGui.SetTooltip("Ctrl+click to activate");
+            
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            {
+                ImGui.SetTooltip("Ctrl+click to activate");
+            }
         }
 
         for (int i = 0; i < Plugin.Configuration.PositionsToRender.Count; i++)
@@ -347,7 +359,7 @@ public class MainWindow : Window, IDisposable
             id++;
             if (ImGuiComponents.IconButton(id, FontAwesomeIcon.HandPointDown))
             {
-                Plugin.Configuration.PositionsToRender[i] = Plugin.ClientState.LocalPlayer.Position;
+                Plugin.Configuration.PositionsToRender[i] = Plugin.ObjectTable.LocalPlayer.Position;
                 Plugin.Configuration.Save();
             }
             if (ImGui.IsItemHovered())

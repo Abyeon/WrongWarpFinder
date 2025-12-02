@@ -29,6 +29,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IGameInteropProvider GameInteropProvider { get; private set; } = null!;
     [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
     [PluginService] internal static IClientState ClientState { get; private set; } = null!;
+    [PluginService] internal static IObjectTable ObjectTable { get; private set; } = null!;
     [PluginService] internal static IDataManager DataManager { get; private set; } = null!;
     [PluginService] internal static IPluginLog Log { get; private set; } = null!;
     [PluginService] internal static IGameGui GameGui { get; private set; } = null!;
@@ -134,19 +135,13 @@ public sealed class Plugin : IDalamudPlugin
 
     private void Update(IFramework framework)
     {
-        if (ClientState.LocalPlayer == null) return;
+        if (ObjectTable.LocalPlayer == null) return;
         CheckWarpPos();
     }
 
     public void ShowHideOverlay()
     {
-        if (Configuration.ShowOverlay)
-        {
-            RenderOverlay.IsOpen = true;
-        } else
-        {
-            RenderOverlay.IsOpen = false;
-        }
+        RenderOverlay.IsOpen = Configuration.ShowOverlay;
     }
 
     public void Dispose()
