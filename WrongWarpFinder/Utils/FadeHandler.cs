@@ -41,7 +41,7 @@ public class FadeHandler : IDisposable
     }
 
     // Old Airiel plogon code
-    private unsafe void UpdateFade(bool reset = false)
+    private static unsafe void UpdateFade(bool reset = false)
     { 
         var fade = (AtkUnitBase*)Plugin.GameGui.GetAddonByName("FadeMiddle").Address;
         var locationTitle = (AtkUnitBase*)Plugin.GameGui.GetAddonByName("_LocationTitle").Address;
